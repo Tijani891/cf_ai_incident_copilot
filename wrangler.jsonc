@@ -1,0 +1,37 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cf-ai-incident-copilot",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "observability": { "enabled": true },
+
+  // Chat UI served as static assets from the same Worker
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+
+  // LLM: Llama 3.3 on Workers AI
+  "ai": { "binding": "AI" },
+
+  // Memory / state: one Durable Object (SQLite-backed) per incident session
+  "durable_objects": {
+    "bindings": [{ "name": "SESSIONS", "class_name": "IncidentSession" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["IncidentSession"] }],
+
+  // Coordination: durable multi-step triage pipeline
+  "workflows": [
+    {
+      "name": "incident-triage",
+      "binding": "TRIAGE",
+      "class_name": "TriageWorkflow"
+    }
+  ],
+
+  "vars": {
+    "MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+  }
+}

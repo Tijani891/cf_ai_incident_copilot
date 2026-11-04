@@ -1,0 +1,2 @@
+# Copy to .dev.vars for local development (it is git-ignored).
+ALERT_WEBHOOK_TOKEN=local-dev-token-change-me

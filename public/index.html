@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Incident Copilot</title>
+  <meta name="description" content="On-call incident copilot on Cloudflare Workers AI, Durable Objects and Workflows" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="pulse" aria-hidden="true"></span>
+      <span>incident<b>copilot</b></span>
+    </div>
+    <div class="session">
+      <code id="session-id" title="Session id">—</code>
+      <button id="new-session" class="ghost" type="button">New incident</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="chat" aria-label="Incident chat">
+      <div id="messages" class="messages" aria-live="polite">
+        <div class="empty" id="empty">
+          <h1>What's broken?</h1>
+          <p>Describe symptoms as you see them: alerts firing, error rates, recent deploys. The copilot remembers this incident, and the triage pipeline turns the conversation into a severity call, ranked hypotheses and a postmortem draft.</p>
+          <div class="examples">
+            <button type="button" class="example">Kafka consumer lag on the logs-ingest group has been climbing since we rolling-restarted broker 3 at 14:05. Under-replicated partitions alert is firing.</button>
+            <button type="button" class="example">PgBouncer cl_waiting is spiking on the billing pool and services see "no more connections allowed". Postgres itself shows plenty of headroom.</button>
+            <button type="button" class="example">etcd wal_fsync p99 is over 500ms on two members and the Kubernetes API server is timing out list requests. Started after a node kernel update.</button>
+            <button type="button" class="example">A Ceph OSD on host stor-12 keeps flapping up/down and the Rook cluster is HEALTH_WARN with slow ops.</button>
+          </div>
+        </div>
+      </div>
+
+      <form id="composer" class="composer">
+        <textarea id="input" rows="2" maxlength="4000" placeholder="Paste an alert, a log line, or what you just tried…" required></textarea>
+        <button id="send" type="submit">Send</button>
+      </form>
+    </section>
+
+    <aside class="side" aria-label="Session memory and triage">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Stack memory</h2>
+          <span id="stack-status" class="hint"></span>
+        </div>
+        <textarea id="stack" rows="5" maxlength="2000" placeholder="e.g. Bare-metal Linux fleet, Kubernetes 1.30 (etcd 3.5, 3 members), Kafka 3.7 + ZooKeeper, Postgres 15 behind PgBouncer with Stolon, Ceph via Rook, Prometheus/Alertmanager, Salt for config"></textarea>
+        <button id="save-stack" type="button" class="ghost">Remember stack</button>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Triage pipeline</h2>
+          <span id="triage-status" class="hint"></span>
+        </div>
+        <ol class="steps" id="steps">
+          <li>Load incident memory</li>
+          <li>Classify severity &amp; impact</li>
+          <li>Rank root-cause hypotheses</li>
+          <li>Draft postmortem</li>
+          <li>Save to session</li>
+        </ol>
+        <button id="run-triage" type="button">Run triage</button>
+      </section>
+
+      <section class="panel report" id="report" hidden>
+        <div class="panel-head">
+          <h2>Latest report</h2>
+          <button id="copy-pm" type="button" class="ghost small">Copy postmortem</button>
+        </div>
+        <div id="report-body"></div>
+      </section>
+    </aside>
+  </main>
+</body>
+</html>

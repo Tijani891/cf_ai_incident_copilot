@@ -1,0 +1,20 @@
+# Minimal Alertmanager config that sends notifications to Incident Copilot.
+# Store the token in a file readable by Alertmanager (it must match the
+# ALERT_WEBHOOK_TOKEN secret set with `npx wrangler secret put ALERT_WEBHOOK_TOKEN`).
+route:
+  receiver: incident-copilot
+  group_by: [alertname, cluster]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: incident-copilot
+    webhook_configs:
+      - url: https://cf-ai-incident-copilot.<your-subdomain>.workers.dev/api/alerts/alertmanager
+        send_resolved: true
+        max_alerts: 50
+        http_config:
+          authorization:
+            type: Bearer
+            credentials_file: /etc/alertmanager/secrets/incident-copilot-token

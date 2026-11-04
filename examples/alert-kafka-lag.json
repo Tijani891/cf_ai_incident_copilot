@@ -1,0 +1,24 @@
+{
+  "version": "4",
+  "groupKey": "{}:{alertname=\"KafkaConsumerLagHigh\", cluster=\"core-kafka-lis1\"}",
+  "status": "firing",
+  "receiver": "incident-copilot",
+  "commonLabels": { "alertname": "KafkaConsumerLagHigh", "cluster": "core-kafka-lis1", "severity": "critical" },
+  "externalURL": "http://alertmanager.example.internal:9093",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": { "alertname": "KafkaConsumerLagHigh", "severity": "critical", "cluster": "core-kafka-lis1", "group": "logs-ingest", "topic": "edge-logs" },
+      "annotations": { "summary": "Consumer group logs-ingest lag above 5M messages for 10m and rising" },
+      "startsAt": "2026-11-04T14:12:00Z",
+      "generatorURL": "http://prometheus.example.internal:9090/graph"
+    },
+    {
+      "status": "firing",
+      "labels": { "alertname": "KafkaUnderReplicatedPartitions", "severity": "warning", "cluster": "core-kafka-lis1", "instance": "kafka-3:9308" },
+      "annotations": { "summary": "42 under-replicated partitions since broker 3 restart" },
+      "startsAt": "2026-11-04T14:06:30Z",
+      "generatorURL": "http://prometheus.example.internal:9090/graph"
+    }
+  ]
+}
