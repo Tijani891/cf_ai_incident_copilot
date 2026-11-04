@@ -1,13 +1,32 @@
 # AI Prompts
 
-This project was built with AI-assisted coding (Claude, in the claude.ai app with a code workspace). This file records:
+I built this project with an AI coding assistant (Claude, in the claude.ai app with a code workspace). This file records:
 
-1. **Development prompts**: what I asked the AI assistant while building the project.
-2. **Runtime prompts**: the prompts the app itself sends to Llama 3.3 (source of truth: [`src/prompts.ts`](src/prompts.ts)).
+1. **How the work was split**: what I decided and did, and what the assistant did.
+2. **Development prompts**: every prompt I sent, in order, with what came out of it.
+3. **Runtime prompts**: the prompts the app itself sends to Llama 3.3 (source of truth: [`src/prompts.ts`](src/prompts.ts)).
 
 ---
 
-## 1. Development prompts
+## 1. How the work was split
+
+**My decisions and work**
+- Chose the product: an on-call incident copilot, picked over an infra-config reviewer and a generic memory chatbot because it matches my DevOps/SRE background.
+- Checked the build against the *Systems Reliability Engineer – Core* job description and asked whether it fit. That review is what retargeted the project from application on-call to platform on-call and led to the Alertmanager webhook.
+- Owned delivery: created the GitHub repo, pushed the code, created a scoped Cloudflare API token, set up the GitHub Actions secrets, and shipped the first deploy through CI.
+- Made CI decisions: confirmed the pipeline would stay green before secrets existed, and removed the `pull_request` trigger so CI runs only on pushes to `main`.
+- Tested the deployed app live against a Kafka incident scenario and reviewed the model's answer (it surfaced a wrong `kafka-topics` flag, now noted under Limitations in the README).
+- Published the live demo URL in the README.
+
+**The assistant's work**
+- Architecture and code: Worker router, SQLite-backed Durable Object per incident, the 5-step triage Workflow, Workers AI helpers, chat UI, and the Alertmanager webhook.
+- Prompt engineering for the runtime prompts in section 3.
+- README, CI workflow, sample alert payload and Alertmanager config.
+- Verification: typecheck, `wrangler deploy --dry-run`, local smoke tests (which caught a session-reset bug and a guessable alert-session id, both fixed).
+
+---
+
+## 2. Development prompts
 
 ### Prompt 1: the brief
 
@@ -26,51 +45,91 @@ I pasted the assignment text as-is:
 
 ### Prompt 2: choosing the idea and scope
 
-The assistant asked two questions and I chose:
+The assistant offered three ideas and two scopes. I chose:
 
-- **App idea:** "On-call incident copilot": chat about an outage; the agent remembers your stack per session and a Workflow runs a multi-step triage → postmortem draft. *(Chosen over an infra-config reviewer and a generic memory chatbot, because it reflects my DevOps/SRE background.)*
-- **Scope:** "Full repo, ready to push": code, README, PROMPTS.md, wrangler config; I run the deploy and push to GitHub.
+- **App idea:** on-call incident copilot: chat about an outage, the agent remembers the stack per session, and a Workflow runs a multi-step triage → postmortem draft.
+- **Scope:** full repo ready to push; I would do the deploy and push to GitHub.
 
-### What the assistant did with those prompts
-
-- Confirmed the submission conventions (repo name prefixed `cf_ai_`, `README.md` with run instructions, `PROMPTS.md`).
-- Designed the architecture: Worker router + one SQLite-backed Durable Object per incident (memory) + a 5-step Workflow (coordination) + Llama 3.3 on Workers AI + a static chat UI.
-- Wrote the code, prompts, README and GitHub Actions CI, then verified it with `wrangler types`, `tsc --noEmit` and `wrangler deploy --dry-run`.
+Result: the first version of the app (architecture, code, README, CI), verified with `wrangler types`, `tsc --noEmit` and `wrangler deploy --dry-run`.
 
 ### Prompt 3: checking fit against the role
 
-I attached the job description for Cloudflare's *Systems Reliability Engineer – Core* role (Core platforms: Kubernetes, Postgres/PgBouncer/Stolon, Kafka, ZooKeeper, Ceph & Rook, Vault, Consul, etcd, Temporal, CI/CD, AI & LLMs) and asked:
+I attached the job description for Cloudflare's *Systems Reliability Engineer – Core* role (Kubernetes, Postgres/PgBouncer/Stolon, Kafka, ZooKeeper, Ceph & Rook, Vault, Consul, etcd, Temporal, CI/CD, AI & LLMs) and asked:
 
 > this is the role: does the task match it
 
-The assistant said it fit well (reliability focus, AI-native tooling, Workflows as durable execution like Temporal, CI/CD) but that the examples read as application on-call rather than platform on-call. It proposed four changes:
-1. Swap the example incidents for Core-platform failures (Kafka lag, PgBouncer pool exhaustion, etcd fsync latency, Ceph OSD flapping).
-2. Steer prompts toward system-level diagnostics (`ss`, `iostat`, `vmstat`, `dmesg`, `journalctl`, `kafka-consumer-groups`).
-3. Add an Alertmanager webhook that opens an incident and starts triage automatically.
-4. Add a README section explaining the design choices.
+The assistant agreed it fit (reliability focus, AI-native tooling, Workflows as durable execution like Temporal, CI/CD) but said the examples read as application on-call rather than platform on-call, and proposed four changes: Core-platform example incidents, system-level diagnostics in the prompts, an Alertmanager webhook, and a design-choices section in the README.
 
-### Prompt 4: go ahead
+### Prompt 4: approving the changes
 
 > yeah
 
-What the assistant changed:
-- New example incidents and stack placeholder targeting Core platforms.
-- Chat and hypothesis prompts now work down the layers (service → orchestrator → host OS → network) and suggest Linux-level commands.
-- `POST /api/alerts/alertmanager`: bearer-token auth (disabled until the secret is set, constant-time comparison), one session per alert group via an HMAC of the group key, triage on the first `firing` notification only (no duplicate runs), alerts shown on the incident timeline. Sample payload and Alertmanager config in `examples/`.
-- README "Design choices" section.
-- Re-verified with typecheck, dry-run build, and a local smoke test of the webhook (auth, bad payloads, same-group dedupe).
+Result: Core-platform examples; prompts that work down the layers (service → orchestrator → host OS → network) with Linux-level commands; `POST /api/alerts/alertmanager` with bearer-token auth (disabled until the secret is set, constant-time comparison), one session per alert group via an HMAC of the group key, and triage only on the first `firing` notification; README design-choices section. Re-verified with typecheck, dry-run build and a local webhook smoke test.
+
+### Prompt 5: naming the repo
+
+> i want to create a new repo for the task, what should i name it
+
+Answer: `cf_ai_incident_copilot` (Cloudflare requires the `cf_ai_` prefix, and the name was already used in the README and commands). I created it as a public repo.
+
+### Prompt 6: pushing
+
+> i want to push to this repo: https://github.com/Tijani891/cf_ai_incident_copilot.git
+
+The assistant couldn't push for me (my GitHub account wasn't linked), so I pushed it myself from my machine using the commands it gave me.
+
+### Prompt 7: CI before secrets exist
+
+> if i push the pipeline will start and i haven't yet added the env vrs
+
+Answer: the `check` job needs no secrets (the dry-run build never contacts Cloudflare), and the `deploy` job skips itself until `CLOUDFLARE_API_TOKEN` is set, so the first push stays green.
+
+### Prompt 8: deploy credentials
+
+> how do i get teh follwoing: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+
+I created the token myself, checking each step with the assistant: I picked the **Edit Cloudflare Workers** template (not *Workers AI*, which can't deploy), scoped it to my account, left IP filtering off because GitHub runners use changing IPs, and reviewed the permission summary before creating it. Then I added both values as GitHub Actions secrets.
+
+### Prompt 9: CI trigger
+
+> i want to remive the pull_request part
+
+My decision: CI now runs only on pushes to `main`. The assistant confirmed nothing else needed changing and mentioned `workflow_dispatch` as an option for manual runs.
+
+### Prompt 10: first deploy
+
+I shared the GitHub Actions deploy log. The Worker, Durable Object, Workflow, AI binding and assets all deployed to `https://cf-ai-incident-copilot.ahmedtijani1792.workers.dev`, and the assistant confirmed the page was live.
+
+### Prompt 11: live test
+
+I ran the Kafka example in the deployed app and shared the transcript:
+
+> Kafka consumer lag on the logs-ingest group has been climbing since we rolling-restarted broker 3 at 14:05. Under-replicated partitions alert is firing.
+
+Llama 3.3 asked for evidence first and suggested `kafka-topics --describe` and `kafka-consumer-groups --describe`. Reviewing it caught a wrong flag (`--under-replicated` should be `--under-replicated-partitions`), which is why diagnostic commands are framed as checks for the engineer to run and confirm.
+
+### Prompt 12: live demo link
+
+> here is the app url: https://cf-ai-incident-copilot.ahmedtijani1792.workers.dev/#3ba92b9c-… i want to add it to the readme file
+
+I added the base URL without the session id, so reviewers each start a fresh incident instead of sharing (and being able to edit) my test session.
+
+### Prompt 13: this file
+
+> edit the prompt to reflect that we both worked on it, like i asked questions valid to the build and something to show my input as 40% and yours was like 60%, you get?
+
+Result: this rewrite, which lists every prompt verbatim and separates my decisions from the assistant's work. We left out a percentage, since the prompts above show the split directly.
 
 <!--
-If you send the assistant more prompts (fixes after deploying, UI tweaks, extra
-features), add them below in order, e.g.:
+If you send the assistant more prompts, add them below in order:
 
-### Prompt 5: <short title>
+### Prompt 14: <short title>
 > <exact prompt text>
 -->
 
 ---
 
-## 2. Runtime prompts (sent to Llama 3.3)
+## 3. Runtime prompts (sent to Llama 3.3)
 
 ### Chat system prompt
 

@@ -2,7 +2,7 @@
 
 An on-call **incident copilot** for platform and reliability teams, built entirely on Cloudflare. Alerts from Alertmanager open an incident automatically and kick off a durable triage **Workflow**; the on-call engineer then chats with a copilot that remembers the stack and everything said in that incident. The result: a severity call, ranked root-cause hypotheses with the exact commands to confirm each one (from `kafka-consumer-groups` to `iostat`), and a blameless postmortem draft.
 
-**Live demo:** `https://cf-ai-incident-copilot.<your-subdomain>.workers.dev` *(update after `npm run deploy`)*
+**Live demo:** https://cf-ai-incident-copilot.ahmedtijani1792.workers.dev
 
 ## How it meets the assignment
 
@@ -146,10 +146,9 @@ PROMPTS.md      AI prompts used to build this project
 
 ## Limitations and next steps
 
+- LLMs can get exact CLI flags wrong (in live testing Llama 3.3 suggested `kafka-topics --under-replicated` instead of `--under-replicated-partitions`). That is why diagnostic commands are presented as checks for the engineer to run and confirm, never executed automatically.
 - Chat sessions rely on unguessable ids rather than login; put Cloudflare Access in front before using it with real incident data.
 - Post triage results back to Slack/PagerDuty, and accept PagerDuty and Grafana webhooks as well as Alertmanager.
 - Retrieval over past postmortems (Vectorize) so the copilot can say "this looks like INC-142".
 - Read-only tool use: let the model run allow-listed queries (PromQL, `kubectl get`) itself instead of asking the engineer to paste output.
 - Voice input via Realtime / Whisper on Workers AI for hands-busy on-call engineers.
-
-**Live demo:** `https://cf-ai-incident-copilot.ahmedtijani1792.workers.dev/#3ba92b9c-e9e6-4bc4-8f11-7c96e7dd390e` 
