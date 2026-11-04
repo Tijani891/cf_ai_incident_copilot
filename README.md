@@ -1,4 +1,4 @@
-# cf_ai_incident_copilot
+# Incident Copilot: From Alert to Postmortem for Platform Reliability Teams
 
 An on-call **incident copilot** for platform and reliability teams, built entirely on Cloudflare. Alerts from Alertmanager open an incident automatically and kick off a durable triage **Workflow**; the on-call engineer then chats with a copilot that remembers the stack and everything said in that incident. The result: a severity call, ranked root-cause hypotheses with the exact commands to confirm each one (from `kafka-consumer-groups` to `iostat`), and a blameless postmortem draft.
 
