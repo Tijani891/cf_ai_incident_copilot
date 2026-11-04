@@ -152,4 +152,4 @@ PROMPTS.md      AI prompts used to build this project
 - Read-only tool use: let the model run allow-listed queries (PromQL, `kubectl get`) itself instead of asking the engineer to paste output.
 - Voice input via Realtime / Whisper on Workers AI for hands-busy on-call engineers.
 
-**Live demo:** `https://cf-ai-incident-copilot.<your-subdomain>.workers.dev` 
+**Live demo:** `https://cf-ai-incident-copilot.ahmedtijani1792.workers.dev/#3ba92b9c-e9e6-4bc4-8f11-7c96e7dd390e` 
