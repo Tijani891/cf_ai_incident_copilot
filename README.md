@@ -151,3 +151,5 @@ PROMPTS.md      AI prompts used to build this project
 - Retrieval over past postmortems (Vectorize) so the copilot can say "this looks like INC-142".
 - Read-only tool use: let the model run allow-listed queries (PromQL, `kubectl get`) itself instead of asking the engineer to paste output.
 - Voice input via Realtime / Whisper on Workers AI for hands-busy on-call engineers.
+
+**Live demo:** `https://cf-ai-incident-copilot.<your-subdomain>.workers.dev` 
